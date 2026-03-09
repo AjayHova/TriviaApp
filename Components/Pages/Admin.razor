@@ -1,0 +1,274 @@
+@page "/admin"
+@inject IConfiguration Config
+@inject TriviaApp.Services.AppState State
+@inject TriviaApp.Services.FirestoreService Db
+@inject NavigationManager Nav
+@using ClosedXML.Excel
+
+<NavBar />
+
+<div class="page-center">
+    <div class="card" style="max-width: 640px;">
+        <h2 style="text-align:center; margin-bottom:1.5rem;">⚙️ Admin Panel</h2>
+
+        @if (!State.IsLoggedIn)
+        {
+            <p class="muted">Redirecting...</p>
+        }
+        else if (State.Email != Config["Firebase:AdminEmail"])
+        {
+            <p class="err">⛔ Access denied. You must be logged in as the admin account.</p>
+        }
+        else
+        {
+            <!-- Tab Switcher -->
+            <div class="tab-bar">
+                <button class="@TabClass("manual")" @onclick='() => activeTab = "manual"'>✏️ Type Question</button>
+                <button class="@TabClass("upload")" @onclick='() => activeTab = "upload"'>📤 Upload Excel</button>
+                <button class="@TabClass("manage")" @onclick='() => activeTab = "manage"'>📋 Manage (@questions.Count)</button>
+            </div>
+
+            <!-- Manual Entry Tab -->
+            @if (activeTab == "manual")
+            {
+                <div class="box purple-box">
+                    <h3 style="margin-bottom:1rem;">✏️ Add a Question Manually</h3>
+
+                    <label class="field-label">Question</label>
+                    <input class="inp" placeholder="e.g. What is the capital of France?" @bind="manualQ.Text" />
+
+                    <label class="field-label">Option A</label>
+                    <input class="inp" placeholder="Option A" @bind="manualQ.OptionA" />
+
+                    <label class="field-label">Option B</label>
+                    <input class="inp" placeholder="Option B" @bind="manualQ.OptionB" />
+
+                    <label class="field-label">Option C</label>
+                    <input class="inp" placeholder="Option C (optional)" @bind="manualQ.OptionC" />
+
+                    <label class="field-label">Option D</label>
+                    <input class="inp" placeholder="Option D (optional)" @bind="manualQ.OptionD" />
+
+                    <label class="field-label">Correct Answer <span class="muted">(must match one option exactly)</span></label>
+                    <input class="inp" placeholder="e.g. Paris" @bind="manualQ.Answer" />
+
+                    @if (!string.IsNullOrEmpty(manualMsg))
+                    {
+                        <p class="@(manualMsg.StartsWith("✅") ? "ok" : "err")" style="margin-bottom:8px;">@manualMsg</p>
+                    }
+
+                    <button class="btn green" @onclick="SaveManualQuestion" disabled="@savingManual">
+                        @(savingManual ? "Saving..." : "➕ Add Question")
+                    </button>
+                </div>
+            }
+
+            <!-- Upload Tab -->
+            @if (activeTab == "upload")
+            {
+                <div class="box green-box">
+                    <h3 style="margin-bottom:0.75rem;">📤 Upload Questions (Excel)</h3>
+                    <p class="muted" style="margin-bottom:12px;">
+                        Format: <strong>Question | Option A | Option B | Option C | Option D | Answer</strong><br />
+                        Row 1 = headers. Answer must exactly match one of the options.<br />
+                        <span style="color:#fbbf24;">⚠️ This will append to existing questions.</span>
+                    </p>
+                    <InputFile OnChange="HandleUpload" accept=".xlsx,.xls" />
+                    @if (!string.IsNullOrEmpty(uploadMsg))
+                    {
+                        <p class="@(uploadMsg.StartsWith("✅") ? "ok" : "err")" style="margin-top:8px;">@uploadMsg</p>
+                    }
+                </div>
+            }
+
+            <!-- Manage Tab -->
+            @if (activeTab == "manage")
+            {
+                <div class="box" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                        <h3>📋 All Questions (@questions.Count)</h3>
+                        @if (questions.Any())
+                        {
+                            <button class="btn red" style="width:auto; padding:6px 14px; font-size:13px;" @onclick="ConfirmClearAll">
+                                🗑️ Clear All
+                            </button>
+                        }
+                    </div>
+
+                    @if (showClearConfirm)
+                    {
+                        <div class="confirm-box">
+                            <p>Are you sure you want to delete <strong>all @questions.Count questions</strong>?</p>
+                            <div style="display:flex; gap:8px; margin-top:10px;">
+                                <button class="btn red" style="width:auto; padding:8px 16px;" @onclick="ClearAllQuestions">Yes, delete all</button>
+                                <button class="btn secondary" style="width:auto; padding:8px 16px;" @onclick='() => showClearConfirm = false'>Cancel</button>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="scroll-box">
+                        @if (!questions.Any())
+                        {
+                            <p class="muted">No questions yet.</p>
+                        }
+                        @foreach (var (q, i) in questions.Select((q, idx) => (q, idx)))
+                        {
+                            <div class="q-row">
+                                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                                    <div style="flex:1;">
+                                        <strong>Q@(i + 1):</strong> @q.Text<br />
+                                        <span class="muted">Options: @string.Join(", ", q.Options)</span><br />
+                                        <span style="color:#10b981;">✅ @q.Answer</span>
+                                    </div>
+                                    <button class="btn red"
+                                            style="width:auto; padding:4px 10px; font-size:12px; margin:0 0 0 10px;"
+                                            @onclick="() => DeleteQuestion(q.Id)">
+                                        🗑️
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    List<TriviaApp.Models.Question> questions = new();
+    string activeTab = "manual";
+    string uploadMsg = "";
+    string manualMsg = "";
+    bool savingManual = false;
+    bool showClearConfirm = false;
+
+    // Manual question form state
+    ManualQuestionForm manualQ = new();
+
+    class ManualQuestionForm
+    {
+        public string Text    { get; set; } = "";
+        public string OptionA { get; set; } = "";
+        public string OptionB { get; set; } = "";
+        public string OptionC { get; set; } = "";
+        public string OptionD { get; set; } = "";
+        public string Answer  { get; set; } = "";
+    }
+
+    string TabClass(string tab) => tab == activeTab
+        ? "tab-btn tab-btn-active"
+        : "tab-btn";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!State.IsLoggedIn) { Nav.NavigateTo("/login"); return; }
+        questions = await Db.GetQuestionsAsync();
+    }
+
+    async Task SaveManualQuestion()
+    {
+        manualMsg = "";
+
+        if (string.IsNullOrWhiteSpace(manualQ.Text))    { manualMsg = "❌ Question text is required."; return; }
+        if (string.IsNullOrWhiteSpace(manualQ.OptionA)) { manualMsg = "❌ Option A is required."; return; }
+        if (string.IsNullOrWhiteSpace(manualQ.OptionB)) { manualMsg = "❌ Option B is required."; return; }
+        if (string.IsNullOrWhiteSpace(manualQ.Answer))  { manualMsg = "❌ Correct answer is required."; return; }
+
+        var options = new List<string> { manualQ.OptionA, manualQ.OptionB };
+        if (!string.IsNullOrWhiteSpace(manualQ.OptionC)) options.Add(manualQ.OptionC);
+        if (!string.IsNullOrWhiteSpace(manualQ.OptionD)) options.Add(manualQ.OptionD);
+
+        if (!options.Contains(manualQ.Answer))
+        {
+            manualMsg = "❌ The correct answer must exactly match one of the options.";
+            return;
+        }
+
+        savingManual = true;
+        StateHasChanged();
+
+        var newQ = new TriviaApp.Models.Question
+        {
+            Text    = manualQ.Text.Trim(),
+            Options = options,
+            Answer  = manualQ.Answer.Trim()
+        };
+
+        // Append to existing questions list and save all
+        questions.Add(newQ);
+        await Db.SaveQuestionsAsync(questions, State.IdToken!);
+
+        manualMsg = "✅ Question added successfully!";
+        savingManual = false;
+
+        // Reset form
+        manualQ = new ManualQuestionForm();
+    }
+
+    async Task HandleUpload(InputFileChangeEventArgs e)
+    {
+        uploadMsg = "Parsing...";
+        StateHasChanged();
+
+        try
+        {
+            using var stream = e.File.OpenReadStream(maxAllowedSize: 10_000_000);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            ms.Position = 0;
+
+            using var wb = new XLWorkbook(ms);
+            var ws = wb.Worksheet(1);
+            var parsed = new List<TriviaApp.Models.Question>();
+
+            foreach (var row in ws.RowsUsed().Skip(1))
+            {
+                var q   = row.Cell(1).GetValue<string>().Trim();
+                var a   = row.Cell(2).GetValue<string>().Trim();
+                var b   = row.Cell(3).GetValue<string>().Trim();
+                var c   = row.Cell(4).GetValue<string>().Trim();
+                var d   = row.Cell(5).GetValue<string>().Trim();
+                var ans = row.Cell(6).GetValue<string>().Trim();
+
+                if (!string.IsNullOrWhiteSpace(q) && !string.IsNullOrWhiteSpace(ans))
+                {
+                    parsed.Add(new TriviaApp.Models.Question
+                    {
+                        Text    = q,
+                        Options = new List<string> { a, b, c, d }
+                            .Where(o => !string.IsNullOrWhiteSpace(o)).ToList(),
+                        Answer  = ans
+                    });
+                }
+            }
+
+            if (!parsed.Any()) { uploadMsg = "❌ No valid rows found. Check the format."; return; }
+
+            // Append uploaded questions to existing ones
+            questions.AddRange(parsed);
+            await Db.SaveQuestionsAsync(questions, State.IdToken!);
+            uploadMsg = $"✅ Uploaded and saved {parsed.Count} questions! Total: {questions.Count}";
+            activeTab = "manage";
+        }
+        catch (Exception ex)
+        {
+            uploadMsg = $"❌ Error: {ex.Message}";
+        }
+    }
+
+    async Task DeleteQuestion(string id)
+    {
+        questions = questions.Where(q => q.Id != id).ToList();
+        await Db.SaveQuestionsAsync(questions, State.IdToken!);
+    }
+
+    void ConfirmClearAll() => showClearConfirm = true;
+
+    async Task ClearAllQuestions()
+    {
+        questions.Clear();
+        await Db.SaveQuestionsAsync(questions, State.IdToken!);
+        showClearConfirm = false;
+    }
+}

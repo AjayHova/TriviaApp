@@ -1,0 +1,29 @@
+{
+  "Files": [
+    {
+      "Id": "C:\\Projects\\TriviaApp\\wwwroot\\app.css",
+      "PackagePath": "staticwebassets\\app.css"
+    },
+    {
+      "Id": "C:\\Projects\\TriviaApp\\wwwroot\\snow.js",
+      "PackagePath": "staticwebassets\\snow.js"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.TriviaApp.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.build.TriviaApp.props",
+      "PackagePath": "build\\TriviaApp.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildMultiTargeting.TriviaApp.props",
+      "PackagePath": "buildMultiTargeting\\TriviaApp.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildTransitive.TriviaApp.props",
+      "PackagePath": "buildTransitive\\TriviaApp.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

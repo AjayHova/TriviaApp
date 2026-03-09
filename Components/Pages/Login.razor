@@ -1,0 +1,59 @@
+@page "/"
+@page "/login"
+@inject TriviaApp.Services.FirebaseAuthService Auth
+@inject TriviaApp.Services.AppState State
+@inject NavigationManager Nav
+
+
+<div class="page-center">
+    <div class="card">
+        <h2>Welcome Back 🎅</h2>
+        <input class="inp" placeholder="Email" type="email" @bind="email" />
+        <input class="inp" type="password" placeholder="Password" @bind="password"
+               @onkeydown="OnKey" />
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <p class="err">@error</p>
+        }
+        @if (loading)
+        {
+            <p class="muted">Logging in...</p>
+        }
+        <button class="btn" @onclick="DoLogin" disabled="@loading">Login</button>
+        <button class="btn secondary" @onclick="GoRegister" disabled="@loading">
+            Create Account
+        </button>
+    </div>
+</div>
+
+@code {
+    string email = "", password = "", error = "";
+    bool loading = false;
+
+    protected override void OnInitialized()
+    {
+        if (State.IsLoggedIn)
+            Nav.NavigateTo("/game");
+    }
+
+    async Task DoLogin()
+    {
+        error = "";
+        loading = true;
+        StateHasChanged();
+        var err = await Auth.LoginAsync(email, password);
+        loading = false;
+        if (err != null) { error = err; return; }
+        Nav.NavigateTo("/game");
+    }
+
+    void GoRegister()
+    {
+        Nav.NavigateTo("/register");
+    }
+
+    async Task OnKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await DoLogin();
+    }
+}

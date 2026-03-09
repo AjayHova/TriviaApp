@@ -1,0 +1,71 @@
+@page "/register"
+@inject TriviaApp.Services.FirebaseAuthService Auth
+@inject TriviaApp.Services.FirestoreService Db
+@inject TriviaApp.Services.AppState State
+@inject NavigationManager Nav
+
+
+<div class="page-center">
+    <div class="card">
+        <h2>Create Account 🎁</h2>
+        <input class="inp" placeholder="Username" @bind="username" />
+        <input class="inp" placeholder="Email" type="email" @bind="email" />
+        <input class="inp" type="password" placeholder="Password" @bind="password"
+               @onkeydown="OnKey" />
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <p class="err">@error</p>
+        }
+        @if (loading)
+        {
+            <p class="muted">Creating account...</p>
+        }
+        <button class="btn green" @onclick="DoRegister" disabled="@loading">Register</button>
+        <button class="btn secondary" @onclick="GoLogin" disabled="@loading">
+            Back to Login
+        </button>
+    </div>
+</div>
+
+@code {
+    string username = "", email = "", password = "", error = "";
+    bool loading = false;
+
+    void GoLogin() => Nav.NavigateTo("/login");
+
+    async Task DoRegister()
+    {
+        error = "";
+        if (string.IsNullOrWhiteSpace(username)) { error = "Username is required."; return; }
+        if (string.IsNullOrWhiteSpace(email))    { error = "Email is required."; return; }
+        if (string.IsNullOrWhiteSpace(password)) { error = "Password is required."; return; }
+
+        loading = true;
+        StateHasChanged();
+
+        var err = await Auth.RegisterAsync(email, password, username);
+        if (err != null)
+        {
+            loading = false;
+            error = err;
+            return;
+        }
+
+        var user = new TriviaApp.Models.User
+        {
+            Uid      = State.Uid!,
+            Username = username,
+            Email    = email,
+            Score    = 0
+        };
+
+        await Db.CreateUserAsync(user, State.IdToken!);
+        loading = false;
+        Nav.NavigateTo("/game");
+    }
+
+    async Task OnKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await DoRegister();
+    }
+}

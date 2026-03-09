@@ -1,0 +1,69 @@
+@page "/leaderboard"
+@inject TriviaApp.Services.AppState State
+@inject TriviaApp.Services.FirestoreService Db
+@inject NavigationManager Nav
+
+@implements IDisposable
+
+<NavBar />
+
+<div class="page-center">
+    <div class="card" style="max-width: 560px;">
+        <div class="row-center gap" style="margin-bottom: 1.5rem;">
+            <h2 style="margin:0;">🏆 Leaderboard</h2>
+            <span class="live-badge">● LIVE</span>
+        </div>
+
+        @if (loading)
+        {
+            <p class="muted">Loading leaderboard...</p>
+        }
+        else if (!entries.Any())
+        {
+            <p class="muted">No scores yet. Be the first!</p>
+        }
+        else
+        {
+            @foreach (var (e, i) in entries.Select((e, idx) => (e, idx)))
+            {
+                var medal = i switch { 0 => "🥇", 1 => "🥈", 2 => "🥉", _ => $"#{i + 1}" };
+                var cls = e.Uid == State.Uid ? "lb-row highlight" : "lb-row";
+                <div class="@cls">
+                    <span class="medal">@medal</span>
+                    <span class="flex1">
+                        @e.Username
+                        @if (e.Uid == State.Uid)
+                        {
+                            <span class="muted" style="font-size:12px; margin-left:6px;">(you)</span>
+                        }
+                    </span>
+                    <span class="score-badge">@e.Score pts</span>
+                </div>
+            }
+        }
+
+        <p class="muted-sm center">Updates every 10 seconds</p>
+    </div>
+</div>
+
+@code {
+    List<TriviaApp.Models.LeaderboardEntry> entries = new();
+    bool loading = true;
+    Timer? _timer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!State.IsLoggedIn) { Nav.NavigateTo("/login"); return; }
+        await Refresh();
+        loading = false;
+        _timer = new Timer(async _ =>
+        {
+            await Refresh();
+            await InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
+    }
+
+    async Task Refresh() => entries = await Db.GetLeaderboardAsync();
+
+    public void Dispose() => _timer?.Dispose();
+}

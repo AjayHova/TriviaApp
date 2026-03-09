@@ -1,0 +1,40 @@
+@inject TriviaApp.Services.AppState State
+@inject TriviaApp.Services.FirebaseAuthService Auth
+@inject NavigationManager Nav
+@inject IConfiguration Config
+@implements IDisposable
+
+<nav class="nav">
+    <span class="logo">🎄 Christmas Trivia</span>
+    @if (State.IsLoggedIn)
+    {
+        <div class="nav-right">
+            <span class="muted">👤 @(State.DisplayName ?? State.Email)</span>
+            <button class="btn sm" @onclick='() => Nav.NavigateTo("/game")'>Play</button>
+            <button class="btn sm blue" @onclick='() => Nav.NavigateTo("/leaderboard")'>🏆 Board</button>
+            @if (State.Email == Config["Firebase:AdminEmail"])
+            {
+                <button class="btn sm dark" @onclick='() => Nav.NavigateTo("/admin")'>⚙️ Admin</button>
+            }
+            <button class="btn sm red" @onclick="Logout">Logout</button>
+        </div>
+    }
+</nav>
+
+@code {
+    protected override void OnInitialized()
+    {
+        State.OnChange += StateHasChanged;
+    }
+
+    void Logout()
+    {
+        Auth.Logout();
+        Nav.NavigateTo("/login");
+    }
+
+    public void Dispose()
+    {
+        State.OnChange -= StateHasChanged;
+    }
+}

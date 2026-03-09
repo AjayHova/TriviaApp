@@ -1,0 +1,58 @@
+{
+  "Version": 1,
+  "Hash": "e/1ISCT1SolemEhxld/MGUq26eNmbBUIG+aH0VDUOCo=",
+  "Source": "TriviaApp",
+  "BasePath": "_content/TriviaApp",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "TriviaApp\\wwwroot",
+      "Source": "TriviaApp",
+      "ContentRoot": "C:\\Projects\\TriviaApp\\wwwroot\\",
+      "BasePath": "_content/TriviaApp",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": [
+    {
+      "Identity": "C:\\Projects\\TriviaApp\\wwwroot\\app.css",
+      "SourceId": "TriviaApp",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Projects\\TriviaApp\\wwwroot\\",
+      "BasePath": "_content/TriviaApp",
+      "RelativePath": "app.css",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\app.css"
+    },
+    {
+      "Identity": "C:\\Projects\\TriviaApp\\wwwroot\\snow.js",
+      "SourceId": "TriviaApp",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Projects\\TriviaApp\\wwwroot\\",
+      "BasePath": "_content/TriviaApp",
+      "RelativePath": "snow.js",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\snow.js"
+    }
+  ]
+}

@@ -1,0 +1,112 @@
+@page "/game"
+@inject TriviaApp.Services.AppState State
+@inject TriviaApp.Services.FirestoreService Db
+@inject TriviaApp.Services.QuestionService Qs
+@inject NavigationManager Nav
+
+
+<NavBar />
+
+<div class="page-center">
+    <div class="card">
+        @if (!State.IsLoggedIn)
+        {
+            <p class="muted">Redirecting...</p>
+        }
+        else if (loading)
+        {
+            <p class="muted">Loading today's question...</p>
+        }
+        else if (question == null)
+        {
+            <p class="muted">No questions loaded yet — ask an admin to upload questions!</p>
+        }
+        else
+        {
+            <div class="row-spread">
+                <span class="badge purple">📅 @TriviaApp.Services.QuestionService.TodayKey()</span>
+                <span class="badge blue">⭐ Score: @score</span>
+            </div>
+
+            <h2 class="question-text">@question.Text</h2>
+
+            @foreach (var (opt, i) in question.Options.Select((o, idx) => (o, idx)))
+            {
+                var optCopy = opt;
+                var cls = "option";
+                if (answered != null)
+                {
+                    if (opt == question.Answer) cls += " correct";
+                    else if (opt == selected)   cls += " wrong";
+                }
+
+                <button class="@cls" disabled="@(answered != null)"
+                        @onclick="() => HandleAnswer(optCopy)">
+                    <span class="letter">@("ABCD"[i]).</span> @opt
+                </button>
+            }
+
+            @if (answered != null)
+            {
+                <div class="result @(answered.Correct ? "result-correct" : "result-wrong")">
+                    @(answered.Correct ? "🎉 Correct! +1 point" : $"❌ Wrong! Answer: {question.Answer}")
+                    <p class="muted-sm">Come back tomorrow for the next question!</p>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    TriviaApp.Models.Question? question;
+    TriviaApp.Models.AnswerRecord? answered;
+    string? selected;
+    int score;
+    bool loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!State.IsLoggedIn) { Nav.NavigateTo("/login"); return; }
+
+        var questions = await Db.GetQuestionsAsync();
+        question = Qs.GetTodaysQuestion(questions);
+
+        var user = await Db.GetUserAsync(State.Uid!, State.IdToken!);
+        if (user != null)
+        {
+            score = user.Score;
+            var today = TriviaApp.Services.QuestionService.TodayKey();
+            if (user.History.TryGetValue(today, out var record))
+            {
+                answered = record;
+                selected = record.Selected;
+            }
+        }
+
+        loading = false;
+    }
+
+    async Task HandleAnswer(string choice)
+    {
+        if (answered != null || question == null) return;
+
+        var isCorrect = choice == question.Answer;
+        answered = new TriviaApp.Models.AnswerRecord { Selected = choice, Correct = isCorrect };
+        selected = choice;
+
+        var user = await Db.GetUserAsync(State.Uid!, State.IdToken!);
+        if (user != null)
+        {
+            if (isCorrect) user.Score++;
+            score = user.Score;
+            user.History[TriviaApp.Services.QuestionService.TodayKey()] = answered;
+            await Db.SaveUserAsync(user, State.IdToken!);
+            await Db.UpdateLeaderboardAsync(
+                State.Uid!,
+                State.DisplayName ?? State.Email!,
+                user.Score,
+                State.IdToken!
+            );
+        }
+    }
+}
