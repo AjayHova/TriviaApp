@@ -32,3 +32,8 @@ C:\Projects\TriviaApp\obj\Debug\net8.0\refint\TriviaApp.dll
 C:\Projects\TriviaApp\obj\Debug\net8.0\TriviaApp.pdb
 C:\Projects\TriviaApp\obj\Debug\net8.0\TriviaApp.genruntimeconfig.cache
 C:\Projects\TriviaApp\obj\Debug\net8.0\ref\TriviaApp.dll
+C:\Projects\TriviaApp\bin\Debug\net8.0\Firebase.dll
+C:\Projects\TriviaApp\bin\Debug\net8.0\LiteDB.dll
+C:\Projects\TriviaApp\bin\Debug\net8.0\Newtonsoft.Json.dll
+C:\Projects\TriviaApp\bin\Debug\net8.0\System.Reactive.dll
+C:\Projects\TriviaApp\obj\Debug\net8.0\TriviaApp.sourcelink.json

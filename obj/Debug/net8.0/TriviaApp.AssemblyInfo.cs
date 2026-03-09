@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TriviaApp")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8b9141cc34802a9da1fa0f6bc8a835df41c64741")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b5bac5eb3e5011b4ac497b095cc83ea3fd1951b0")]
 [assembly: System.Reflection.AssemblyProductAttribute("TriviaApp")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TriviaApp")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
