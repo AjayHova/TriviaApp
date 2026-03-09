@@ -1,5 +1,6 @@
 using TriviaApp.Services;
 
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
@@ -11,6 +12,10 @@ builder.Services.AddScoped<FirebaseAuthService>();
 // FirestoreService and QuestionService are stateless, safe as Singleton
 builder.Services.AddSingleton<FirestoreService>();
 builder.Services.AddSingleton<QuestionService>();
+
+//Hide the firebase api key
+var apiKey = builder.Configuration["Firebase:ApiKey"];
+
 
 var app = builder.Build();
 
