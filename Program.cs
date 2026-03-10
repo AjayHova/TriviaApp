@@ -1,21 +1,20 @@
 using TriviaApp.Services;
 
-
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 
-// AppState is Scoped = one instance per Blazor circuit (per browser tab)
+// Required for reading/writing cookies in Blazor Server
+builder.Services.AddHttpContextAccessor();
+
+// AppState and auth are Scoped = one instance per Blazor circuit
 builder.Services.AddScoped<AppState>();
+builder.Services.AddScoped<CookieAuthService>();
 builder.Services.AddScoped<FirebaseAuthService>();
 
-// FirestoreService and QuestionService are stateless, safe as Singleton
+// Stateless services
 builder.Services.AddSingleton<FirestoreService>();
 builder.Services.AddSingleton<QuestionService>();
-
-//Hide the firebase api key
-var apiKey = builder.Configuration["Firebase:ApiKey"];
-
 
 var app = builder.Build();
 

@@ -30,8 +30,10 @@
     string email = "", password = "", error = "";
     bool loading = false;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        // Short wait to let SessionRestore finish first
+        await Task.Delay(100);
         if (State.IsLoggedIn)
             Nav.NavigateTo("/game");
     }
@@ -47,10 +49,7 @@
         Nav.NavigateTo("/game");
     }
 
-    void GoRegister()
-    {
-        Nav.NavigateTo("/register");
-    }
+    void GoRegister() => Nav.NavigateTo("/register");
 
     async Task OnKey(KeyboardEventArgs e)
     {

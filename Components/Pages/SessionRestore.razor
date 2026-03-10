@@ -1,0 +1,19 @@
+@inject TriviaApp.Services.FirebaseAuthService Auth
+@inject TriviaApp.Services.AppState State
+@inject NavigationManager Nav
+
+@* 
+    Invisible component included in App.razor.
+    On every circuit start it checks for a saved refresh token cookie
+    and silently restores the user session if found.
+*@
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        if (!State.IsLoggedIn)
+        {
+            await Auth.TryRestoreSessionAsync();
+        }
+    }
+}
